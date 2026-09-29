@@ -1,0 +1,29 @@
+<div class="login">
+  <form class="login-card" (ngSubmit)="submit()">
+    <div class="login-card__brand">
+      <span class="login-card__logo">K</span>
+      <span>Kogzio ERP</span>
+    </div>
+    <h1>Sign in</h1>
+    <p class="login-card__subtitle">Use your admin credentials to continue</p>
+
+    @if (error()) {
+      <div class="login-card__error">{{ error() }}</div>
+    }
+
+    <label>
+      Username
+      <input type="text" name="username" [(ngModel)]="username" required autocomplete="username" />
+    </label>
+    <label>
+      Password
+      <input type="password" name="password" [(ngModel)]="password" required autocomplete="current-password" />
+    </label>
+
+    <button type="submit" class="login-card__submit" [disabled]="loading()">
+      {{ loading() ? 'Signing in…' : 'Sign in' }}
+    </button>
+
+    <p class="login-card__hint">Demo credentials: admin / Admin@123</p>
+  </form>
+</div>

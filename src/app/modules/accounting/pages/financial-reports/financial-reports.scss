@@ -1,0 +1,74 @@
+.toolbar {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.report-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+
+  button {
+    background: #fff;
+    border: 1px solid #dedee5;
+    border-radius: 20px;
+    cursor: pointer;
+    font: inherit;
+    font-size: 12px;
+    padding: 6px 14px;
+
+    &.active { background: #464feb; border-color: #464feb; color: #fff; }
+  }
+}
+
+.filters {
+  align-items: flex-end;
+  display: flex;
+  gap: 10px;
+
+  label { color: #6b6b76; display: flex; flex-direction: column; font-size: 11px; gap: 3px; }
+  input[type='date'] { border: 1px solid #dedee5; border-radius: 5px; font: inherit; font-size: 12px; padding: 6px 8px; }
+
+  .checkbox { align-items: center; flex-direction: row; gap: 5px; padding-bottom: 6px; }
+}
+
+.btn {
+  background: #f2f2f6;
+  border: 1px solid #dedee5;
+  border-radius: 6px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  padding: 7px 14px;
+
+  &--primary { background: #464feb; border-color: #464feb; color: #fff; }
+}
+
+.report {
+  background: #fff;
+  border: 1px solid #e2e2e8;
+  border-radius: 8px;
+  overflow-x: auto;
+
+  table { border-collapse: collapse; width: 100%; }
+  th, td { border-bottom: 1px solid #ececf1; padding: 8px 12px; text-align: left; }
+  th { background: #fafafc; color: #6b6b76; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+  th.num, td.num { text-align: right; }
+  tfoot td { background: #fafafc; border-bottom: 0; font-weight: 600; }
+  .empty { color: #8a8a96; padding: 26px; text-align: center; }
+}
+
+.statement {
+  tr.section td { background: #fafafc; font-size: 11px; font-weight: 600; letter-spacing: 0.4px; text-transform: uppercase; }
+  tr.total td { border-top: 1px solid #dedee5; font-weight: 600; }
+}
+
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; margin-right: 6px; }
+.muted { color: #8a8a96; }
+.strong { font-weight: 600; }
+.overdue { color: #c0392b; }
+.balanced { color: #1f8a4c; font-weight: 600; }

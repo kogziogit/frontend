@@ -1,0 +1,52 @@
+<div class="shell" (click)="closeMenus()">
+  <header class="topbar" (click)="$event.stopPropagation()">
+    <div class="topbar__left">
+      <button class="icon-btn" (click)="toggleSwitcher()" title="Apps">
+        <span class="material-symbols-outlined">apps</span>
+      </button>
+      <a routerLink="/" class="brand">
+        <span class="brand__logo">K</span>
+        <span class="brand__name">Kogzio ERP</span>
+      </a>
+      @if (activeApp) {
+        <span class="topbar__divider"></span>
+        <span class="topbar__app-name" [style.color]="activeApp.color">{{ activeApp.name }}</span>
+      }
+    </div>
+
+    <div class="topbar__right">
+      <button class="icon-btn" title="Notifications">
+        <span class="material-symbols-outlined">notifications</span>
+      </button>
+      <button class="user-chip" (click)="toggleUserMenu()">
+        <span class="user-chip__avatar">{{ (currentUser()?.displayName || 'A').charAt(0) }}</span>
+        <span class="user-chip__name">{{ currentUser()?.displayName || 'Admin' }}</span>
+        <span class="material-symbols-outlined">expand_more</span>
+      </button>
+      @if (userMenuOpen) {
+        <div class="dropdown dropdown--user">
+          <a class="dropdown__item">My Profile</a>
+          <a class="dropdown__item">Preferences</a>
+          <a class="dropdown__item" (click)="logout()">Log out</a>
+        </div>
+      }
+    </div>
+
+    @if (switcherOpen) {
+      <div class="dropdown dropdown--switcher">
+        @for (app of apps; track app.key) {
+          <a class="switcher-item" [routerLink]="app.route" (click)="switcherOpen = false">
+            <span class="switcher-item__icon" [style.background]="app.color + '1a'" [style.color]="app.color">
+              <span class="material-symbols-outlined">{{ app.icon }}</span>
+            </span>
+            <span>{{ app.name }}</span>
+          </a>
+        }
+      </div>
+    }
+  </header>
+
+  <main class="shell__content">
+    <router-outlet></router-outlet>
+  </main>
+</div>

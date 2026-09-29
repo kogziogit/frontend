@@ -1,0 +1,16 @@
+<section class="launcher">
+  <h1>Welcome back, Admin</h1>
+  <p class="launcher__subtitle">Choose a micro-app to get started</p>
+
+  <div class="launcher__grid">
+    @for (app of apps; track app.key) {
+      <a [routerLink]="app.route" class="app-tile">
+        <span class="app-tile__icon" [style.background]="app.color + '1a'" [style.color]="app.color">
+          <span class="material-symbols-outlined">{{ app.icon }}</span>
+        </span>
+        <span class="app-tile__name">{{ app.name }}</span>
+        <span class="app-tile__desc">{{ app.description }}</span>
+      </a>
+    }
+  </div>
+</section>

@@ -1,0 +1,182 @@
+.shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #f6f6f8;
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 52px;
+  padding: 0 16px;
+  background: #2b2b33;
+  color: #fff;
+
+  &__left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  &__right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    position: relative;
+  }
+
+  &__divider {
+    width: 1px;
+    height: 22px;
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  &__app-name {
+    font-weight: 600;
+    font-size: 14px;
+  }
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #fff;
+
+  &__logo {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    background: #464feb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+  }
+
+  &__name {
+    font-weight: 600;
+    font-size: 14px;
+  }
+}
+
+.icon-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+}
+
+.user-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 20px;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  &__avatar {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: #464feb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  &__name {
+    font-size: 13px;
+  }
+}
+
+.dropdown {
+  position: absolute;
+  top: 46px;
+  background: #fff;
+  color: #2b2b33;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  z-index: 30;
+
+  &--user {
+    right: 16px;
+    min-width: 160px;
+  }
+
+  &--switcher {
+    left: 16px;
+    top: 46px;
+    display: grid;
+    grid-template-columns: repeat(3, 110px);
+    gap: 4px;
+    padding: 10px;
+  }
+
+  &__item {
+    display: block;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: #2b2b33;
+    cursor: pointer;
+
+    &:hover {
+      background: #f5f5f5;
+    }
+  }
+}
+
+.switcher-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 4px;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #2b2b33;
+  cursor: pointer;
+
+  &:hover {
+    background: #f5f5f5;
+  }
+
+  &__icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+.shell__content {
+  flex: 1;
+  padding: 20px 28px;
+}

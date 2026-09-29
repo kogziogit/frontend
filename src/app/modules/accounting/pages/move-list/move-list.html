@@ -1,0 +1,317 @@
+<app-page-header
+  [title]="isSale ? 'Customer Invoices' : 'Vendor Bills'"
+  [subtitle]="isSale ? 'Draft, post and collect' : 'Draft, post and pay'"
+  [createLabel]="isSale ? 'New Invoice' : 'New Bill'"
+  (search)="applyFilter($event)"
+  (create)="openCreate()"
+/>
+
+<nav class="state-tabs">
+  @for (tab of [
+    { key: 'all', label: 'All' },
+    { key: 'draft', label: 'Draft' },
+    { key: 'posted', label: 'Posted' },
+    { key: 'unpaid', label: 'Open' },
+    { key: 'cancel', label: 'Cancelled' }
+  ]; track tab.key) {
+    <button type="button" [class.active]="stateFilter === tab.key" (click)="stateFilter = tab.key; applyFilter()">
+      {{ tab.label }}
+    </button>
+  }
+</nav>
+
+@if (loading) {
+  <p>Loading…</p>
+} @else if (error) {
+  <p class="error">{{ error }}</p>
+} @else {
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Number</th>
+          <th>{{ isSale ? 'Customer' : 'Vendor' }}</th>
+          <th>Date</th>
+          <th>Due</th>
+          <th class="num">Untaxed</th>
+          <th class="num">Tax</th>
+          <th class="num">Total</th>
+          <th class="num">Due Amount</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (move of filtered; track move.id) {
+          <tr (click)="openEdit(move)">
+            <td class="mono">{{ move.name === '/' ? '(draft)' : move.name }}</td>
+            <td>{{ move.partnerName }}</td>
+            <td>{{ move.date | date: 'mediumDate' }}</td>
+            <td>{{ move.dueDate | date: 'mediumDate' }}</td>
+            <td class="num">{{ move.amountUntaxed | number: '1.2-2' }}</td>
+            <td class="num">{{ move.amountTax | number: '1.2-2' }}</td>
+            <td class="num strong">{{ move.amountTotal | number: '1.2-2' }} {{ move.currencyCode }}</td>
+            <td class="num" [class.overdue]="move.amountResidual > 0">{{ move.amountResidual | number: '1.2-2' }}</td>
+            <td><span class="badge" [class]="'badge--' + stateLabel(move).toLowerCase()">{{ stateLabel(move) }}</span></td>
+            <td class="actions" (click)="$event.stopPropagation()">
+              @if (move.state === 'posted') {
+                <button type="button" class="icon-btn" title="Download PDF" *hasPermission="'accounting.invoices.export'" (click)="downloadPdf(move)">
+                  <span class="material-symbols-outlined">picture_as_pdf</span>
+                </button>
+                <button type="button" class="icon-btn" title="Edit print template" *hasPermission="'accounting.invoices.edit'" (click)="editTemplate(move)">
+                  <span class="material-symbols-outlined">edit_note</span>
+                </button>
+              }
+              @if (move.state === 'draft') {
+                <button type="button" class="icon-btn" title="Post" *hasPermission="'accounting.journalentries.post'" (click)="post(move)">
+                  <span class="material-symbols-outlined">task_alt</span>
+                </button>
+                <button type="button" class="icon-btn icon-btn--danger" title="Delete draft" *hasPermission="'accounting.invoices.delete'" (click)="remove(move)">
+                  <span class="material-symbols-outlined">delete</span>
+                </button>
+              } @else if (move.state === 'posted' && move.paymentState !== 'paid') {
+                <button type="button" class="icon-btn" title="Register payment" *hasPermission="'accounting.payments.create'" (click)="openPayment(move)">
+                  <span class="material-symbols-outlined">payments</span>
+                </button>
+                <button type="button" class="icon-btn" title="Reverse" *hasPermission="'accounting.invoices.create'" (click)="reverse(move)">
+                  <span class="material-symbols-outlined">undo</span>
+                </button>
+              } @else if (move.state === 'posted') {
+                <button type="button" class="icon-btn" title="Reverse" *hasPermission="'accounting.invoices.create'" (click)="reverse(move)">
+                  <span class="material-symbols-outlined">undo</span>
+                </button>
+              }
+            </td>
+          </tr>
+        } @empty {
+          <tr><td colspan="10" class="empty">Nothing here yet.</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}
+
+@if (showEditor) {
+  <div class="modal-backdrop" (click)="showEditor = false">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <header class="modal__header">
+        <div>
+          <h2>{{ editing ? (editing.name === '/' ? 'Draft' : editing.name) : (isSale ? 'New Invoice' : 'New Bill') }}</h2>
+          @if (editing) {
+            <span class="badge" [class]="'badge--' + stateLabel(editing).toLowerCase()">{{ stateLabel(editing) }}</span>
+          }
+        </div>
+        <button type="button" class="icon-btn" (click)="showEditor = false">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </header>
+
+      <div class="modal__body">
+        <div class="head-grid">
+          <label>
+            {{ isSale ? 'Customer' : 'Vendor' }}
+            @if (isSale) {
+              <select [ngModel]="form.partnerName" (ngModelChange)="onCustomerChange($event)" [disabled]="readOnly">
+                <option value="">Select…</option>
+                @for (c of customers; track c.id) { <option [ngValue]="c.name">{{ c.name }}</option> }
+              </select>
+            } @else {
+              <input type="text" [(ngModel)]="form.partnerName" [disabled]="readOnly" placeholder="Vendor name" />
+            }
+          </label>
+          <label>Invoice No<input type="text" [ngModel]="form.invoiceNumber" (ngModelChange)="onInvoiceNumberChange($event)" [disabled]="readOnly" /></label>
+          <label>
+            Journal
+            <select [(ngModel)]="form.journalId" [disabled]="readOnly">
+              @for (j of journals; track j.id) { <option [ngValue]="j.id">{{ j.code }} — {{ j.name }}</option> }
+            </select>
+          </label>
+          <label>Date<input type="date" [(ngModel)]="form.date" [disabled]="readOnly" /></label>
+          <label>Due Date<input type="date" [(ngModel)]="form.dueDate" [disabled]="readOnly" /></label>
+          <label>Currency<select [(ngModel)]="form.currencyCode" [disabled]="readOnly">
+            @for (currency of currencies; track currency.code) { <option [ngValue]="currency.code">{{ currency.code }} — {{ currency.name }}</option> }
+          </select></label>
+          <label>Reference<input type="text" [(ngModel)]="form.reference" [disabled]="readOnly" /></label>
+        </div>
+
+        <div class="lines-wrap">
+        <table class="lines">
+          <colgroup>
+            <col class="col-desc" />
+            <col class="col-hsn" />
+            <col class="col-account" />
+            <col class="col-qty" />
+            <col class="col-price" />
+            <col class="col-disc" />
+            <col class="col-tax" />
+            <col class="col-subtotal" />
+            <col class="col-remove" />
+          </colgroup>
+          <thead>
+            <tr>
+              <th>Description</th>
+              <th>HSN/SAC</th>
+              <th>Account</th>
+              <th class="num">Qty</th>
+              <th class="num">Price</th>
+              <th class="num">Disc %</th>
+              <th>Taxes</th>
+              <th class="num">Subtotal</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (line of lines; track $index; let i = $index) {
+              <tr>
+                <td>
+                  <select
+                    [ngModel]="descriptionSelection(line)"
+                    (ngModelChange)="onDescriptionSelect(line, $event)"
+                    [disabled]="readOnly"
+                  >
+                    <option value="">Select a service…</option>
+                    @for (item of catalog; track item.id) {
+                      <option [value]="item.serviceDescription">{{ item.serviceDescription }}</option>
+                    }
+                    <option value="__custom__">Other (type your own)…</option>
+                  </select>
+                  @if (line.custom) {
+                    <input type="text" class="custom-desc" [(ngModel)]="line.name" [disabled]="readOnly" placeholder="Describe the service" />
+                  }
+                </td>
+                <td><input type="text" [(ngModel)]="line.hsnSac" [disabled]="readOnly" placeholder="998313" /></td>
+                <td>
+                  <select [(ngModel)]="line.accountId" [disabled]="readOnly">
+                    <option [ngValue]="null">Default</option>
+                    @for (a of accounts; track a.id) { <option [ngValue]="a.id">{{ a.code }} {{ a.name }}</option> }
+                  </select>
+                </td>
+                <td><input type="number" step="0.01" [(ngModel)]="line.quantity" (ngModelChange)="recalc()" [disabled]="readOnly" /></td>
+                <td><input type="number" step="0.01" [(ngModel)]="line.priceUnit" (ngModelChange)="recalc()" [disabled]="readOnly" /></td>
+                <td><input type="number" step="0.01" [(ngModel)]="line.discount" (ngModelChange)="recalc()" [disabled]="readOnly" /></td>
+                <td class="tax-cell">
+                  @for (t of taxes; track t.id) {
+                    <label class="chip" [class.chip--on]="line.taxIds.includes(t.id)">
+                      <input type="checkbox" [checked]="line.taxIds.includes(t.id)" [disabled]="readOnly" (change)="toggleTax(line, t.id)" />
+                      <span>{{ t.amount }}%</span>
+                    </label>
+                  }
+                </td>
+                <td class="num strong">{{ line.subtotal | number: '1.2-2' }}</td>
+                <td>
+                  @if (!readOnly) {
+                    <button type="button" class="icon-btn icon-btn--danger" (click)="removeLine(i)">
+                      <span class="material-symbols-outlined">close</span>
+                    </button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+        </div>
+
+        @if (!readOnly) {
+          <button type="button" class="btn btn--add" (click)="addLine()">
+            <span class="material-symbols-outlined">add</span>
+            Add line
+          </button>
+        }
+
+        <div class="totals">
+          <div><span>Untaxed</span><strong>{{ untaxedTotal | number: '1.2-2' }}</strong></div>
+          <div><span>Tax</span><strong>{{ taxTotal | number: '1.2-2' }}</strong></div>
+          <div class="totals__grand"><span>Total</span><strong>{{ grandTotal | number: '1.2-2' }} {{ form.currencyCode }}</strong></div>
+          @if (editing && editing.state === 'posted') {
+            <div><span>Paid</span><strong>{{ editing.amountPaid | number: '1.2-2' }}</strong></div>
+            <div><span>Due</span><strong>{{ editing.amountResidual | number: '1.2-2' }}</strong></div>
+          }
+        </div>
+
+        <label class="notes">
+          Notes
+          <textarea rows="2" [(ngModel)]="form.narration" [disabled]="readOnly"></textarea>
+        </label>
+
+        @if (editing && editing.state === 'posted') {
+          <details class="journal">
+            <summary>Journal entry</summary>
+            <table class="lines">
+              <thead><tr><th>Account</th><th>Label</th><th class="num">Debit</th><th class="num">Credit</th></tr></thead>
+              <tbody>
+                @for (l of editing.lines; track l.id) {
+                  <tr>
+                    <td class="mono">{{ l.accountCode }} {{ l.accountName }}</td>
+                    <td>{{ l.name }}</td>
+                    <td class="num">{{ l.debit | number: '1.2-2' }}</td>
+                    <td class="num">{{ l.credit | number: '1.2-2' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </details>
+        }
+      </div>
+
+      <footer class="modal__footer">
+        @if (editing && editing.state === 'posted') {
+          <button type="button" class="btn" (click)="downloadPdf(editing)">Download PDF</button>
+          <button type="button" class="btn" (click)="editTemplate(editing)">Print Template</button>
+          <button type="button" class="btn" (click)="resetToDraft(editing)">Reset to Draft</button>
+          <button type="button" class="btn" (click)="reverse(editing)">Reverse</button>
+          @if (editing.paymentState !== 'paid') {
+            <button type="button" class="btn btn--primary" (click)="openPayment(editing)">Register Payment</button>
+          }
+        } @else {
+          <button type="button" class="btn" (click)="save(false)">Save Draft</button>
+          <button type="button" class="btn btn--primary" (click)="save(true)">Save &amp; Post</button>
+        }
+        <span class="spacer"></span>
+        <button type="button" class="btn" (click)="showEditor = false">Close</button>
+      </footer>
+    </div>
+  </div>
+}
+
+@if (showPayment && paymentTarget) {
+  <div class="modal-backdrop" (click)="showPayment = false">
+    <div class="modal modal--sm" (click)="$event.stopPropagation()">
+      <header class="modal__header"><h2>Register Payment</h2></header>
+      <div class="modal__body">
+        <p class="hint">
+          {{ paymentTarget.name }} — {{ paymentTarget.partnerName }}, outstanding
+          <strong>{{ paymentTarget.amountResidual | number: '1.2-2' }} {{ paymentTarget.currencyCode }}</strong>
+        </p>
+        <label>
+          Journal
+          <select [(ngModel)]="payment.journalId">
+            @for (j of journals; track j.id) {
+              @if (j.type === 'bank' || j.type === 'cash') { <option [ngValue]="j.id">{{ j.name }}</option> }
+            }
+          </select>
+        </label>
+        <label>Amount<input type="number" step="0.01" [(ngModel)]="payment.amount" /></label>
+        <label>Date<input type="date" [(ngModel)]="payment.paymentDate" /></label>
+        <label>Method<input type="text" [(ngModel)]="payment.paymentMethod" /></label>
+        <label>Reference<input type="text" [(ngModel)]="payment.reference" /></label>
+      </div>
+      <footer class="modal__footer">
+        <span class="spacer"></span>
+        <button type="button" class="btn" (click)="showPayment = false">Cancel</button>
+        <button type="button" class="btn btn--primary" (click)="registerPayment()">Confirm</button>
+      </footer>
+    </div>
+  </div>
+}
+
+@if (showTemplateEditor && templateMove) {
+  <app-invoice-template-editor
+    [invoiceKey]="templateMove.name"
+    [invoiceNo]="templateMove.name"
+    [customerName]="templateMove.partnerName ?? ''"
+    [invoiceAmount]="templateMove.amountTotal"
+    [invoiceDate]="templateMove.dueDate ?? templateMove.date"
+    (cancel)="showTemplateEditor = false"
+    (saved)="onTemplateSaved()"
+  />
+}

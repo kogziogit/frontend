@@ -1,0 +1,57 @@
+<div class="modal-backdrop">
+  <form class="modal-card" [class.modal-card--wide]="wide" (click)="$event.stopPropagation()" [formGroup]="form" (ngSubmit)="submit()">
+    <div class="modal-card__header">
+      <h2>{{ title }}</h2>
+      <button type="button" class="icon-btn" (click)="cancel.emit()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    @if (tabs.length) {
+      <nav class="form-tabs">
+        @for (tab of tabs; track tab) {
+          <button type="button" [class.active]="activeTab === tab" (click)="activeTab = tab">{{ tab }}</button>
+        }
+      </nav>
+    }
+
+    <div class="modal-card__body">
+      @for (field of fieldsForTab(activeTab); track field.key) {
+        @if (isVisible(field)) {
+        <label [class.field-invalid]="form.get(field.key)?.invalid && form.get(field.key)?.touched">
+          <span class="field-label">{{ field.label }} @if (field.required) { <span class="required-mark">*</span> }</span>
+          @switch (field.type) {
+            @case ('select') {
+              <select [formControlName]="field.key">
+                @if (!field.options?.length) {
+                  <option value="" disabled>No options available</option>
+                }
+                @for (opt of field.options; track opt.value) {
+                  <option [ngValue]="opt.value">{{ opt.label }}</option>
+                }
+              </select>
+            }
+            @case ('readonly') {
+              <div class="field-readonly">{{ computeValue(field) }}</div>
+            }
+            @default {
+              <input [type]="field.type" [formControlName]="field.key" />
+            }
+              }
+            @if (form.get(field.key)?.hasError('required') && form.get(field.key)?.touched) {
+              <small class="field-error">{{ field.label }} is required.</small>
+            } @else if (form.get(field.key)?.hasError('email') && form.get(field.key)?.touched) {
+              <small class="field-error">Enter a valid email address.</small>
+            }
+        </label>
+        }
+      }
+    </div>
+
+
+    <div class="modal-card__footer">
+      <button type="button" class="btn btn--ghost" (click)="cancel.emit()">Cancel</button>
+      <button type="submit" class="btn btn--primary">Save</button>
+    </div>
+  </form>
+</div>

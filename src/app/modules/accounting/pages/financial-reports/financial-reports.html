@@ -1,0 +1,138 @@
+<app-page-header title="Financial Reports" subtitle="Statutory and management reporting" [searchable]="false" />
+
+<div class="toolbar">
+  <nav class="report-tabs">
+    @for (r of reports; track r.key) {
+      <button type="button" [class.active]="active === r.key" (click)="select(r.key)">{{ r.label }}</button>
+    }
+  </nav>
+
+  <div class="filters">
+    @if (!isAged) {
+      <label>From<input type="date" [(ngModel)]="dateFrom" /></label>
+    }
+    <label>{{ isAged ? 'As of' : 'To' }}<input type="date" [(ngModel)]="dateTo" /></label>
+    <label class="checkbox"><input type="checkbox" [(ngModel)]="includeDraft" /><span>Include drafts</span></label>
+    <button type="button" class="btn btn--primary" (click)="run()">Refresh</button>
+  </div>
+</div>
+
+@if (loading) {
+  <p>Building report…</p>
+} @else {
+  <div class="report">
+    @switch (active) {
+      @case ('trial-balance') {
+        <table>
+          <thead>
+            <tr>
+              <th>Code</th><th>Account</th><th>Type</th>
+              <th class="num">Opening</th><th class="num">Debit</th><th class="num">Credit</th><th class="num">Balance</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of trialBalance; track row.accountId) {
+              <tr>
+                <td class="mono">{{ row.code }}</td>
+                <td>{{ row.name }}</td>
+                <td class="muted">{{ row.type }}</td>
+                <td class="num">{{ row.openingBalance | number: '1.2-2' }}</td>
+                <td class="num">{{ row.totalDebit | number: '1.2-2' }}</td>
+                <td class="num">{{ row.totalCredit | number: '1.2-2' }}</td>
+                <td class="num strong">{{ row.balance | number: '1.2-2' }}</td>
+              </tr>
+            }
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="4">Totals</td>
+              <td class="num strong">{{ trialTotals.debit | number: '1.2-2' }}</td>
+              <td class="num strong">{{ trialTotals.credit | number: '1.2-2' }}</td>
+              <td class="num" [class.balanced]="trialTotals.debit === trialTotals.credit">
+                {{ trialTotals.debit === trialTotals.credit ? 'Balanced' : 'Out of balance' }}
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      }
+
+      @case ('tax') {
+        <table>
+          <thead><tr><th>Tax</th><th>Scope</th><th class="num">Net Base</th><th class="num">Tax Amount</th></tr></thead>
+          <tbody>
+            @for (row of taxRows; track row.taxId) {
+              <tr>
+                <td>{{ row.taxName }}</td>
+                <td class="muted">{{ row.typeTaxUse }}</td>
+                <td class="num">{{ row.netBase | number: '1.2-2' }}</td>
+                <td class="num strong">{{ row.taxAmount | number: '1.2-2' }}</td>
+              </tr>
+            } @empty {
+              <tr><td colspan="4" class="empty">No taxed documents in this period.</td></tr>
+            }
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="2">Totals</td>
+              <td class="num strong">{{ taxTotals.base | number: '1.2-2' }}</td>
+              <td class="num strong">{{ taxTotals.tax | number: '1.2-2' }}</td>
+            </tr>
+          </tfoot>
+        </table>
+      }
+
+      @default {
+        @if (isAged) {
+          <table>
+            <thead>
+              <tr>
+                <th>Partner</th><th class="num">Not Due</th><th class="num">1–30</th>
+                <th class="num">31–60</th><th class="num">61–90</th><th class="num">90+</th><th class="num">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of aged; track row.partnerName) {
+                <tr>
+                  <td>{{ row.partnerName }}</td>
+                  <td class="num">{{ row.notDue | number: '1.2-2' }}</td>
+                  <td class="num">{{ row.bucket0To30 | number: '1.2-2' }}</td>
+                  <td class="num">{{ row.bucket31To60 | number: '1.2-2' }}</td>
+                  <td class="num">{{ row.bucket61To90 | number: '1.2-2' }}</td>
+                  <td class="num overdue">{{ row.bucket90Plus | number: '1.2-2' }}</td>
+                  <td class="num strong">{{ row.total | number: '1.2-2' }}</td>
+                </tr>
+              } @empty {
+                <tr><td colspan="7" class="empty">Nothing outstanding.</td></tr>
+              }
+            </tbody>
+            <tfoot>
+              <tr>
+                <td>Totals</td>
+                <td class="num">{{ agedTotals.notDue | number: '1.2-2' }}</td>
+                <td class="num">{{ agedTotals.b30 | number: '1.2-2' }}</td>
+                <td class="num">{{ agedTotals.b60 | number: '1.2-2' }}</td>
+                <td class="num">{{ agedTotals.b90 | number: '1.2-2' }}</td>
+                <td class="num">{{ agedTotals.b90p | number: '1.2-2' }}</td>
+                <td class="num strong">{{ agedTotals.total | number: '1.2-2' }}</td>
+              </tr>
+            </tfoot>
+          </table>
+        } @else {
+          <table class="statement">
+            <tbody>
+              @for (row of financial; track $index) {
+                <tr [class.section]="row.level === 0 && !row.isTotal" [class.total]="row.isTotal">
+                  <td [style.paddingLeft.px]="12 + row.level * 18">
+                    @if (row.code) { <span class="mono muted">{{ row.code }}</span> }
+                    {{ row.name }}
+                  </td>
+                  <td class="num">{{ row.amount ? (row.amount | number: '1.2-2') : '' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      }
+    }
+  </div>
+}
